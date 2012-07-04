@@ -35,7 +35,7 @@
 Lexers for Topic Maps syntaxes.
 """
 import re
-from pygments.lexer import RegexLexer, include, bygroups
+from pygments.lexer import RegexLexer, include, bygroups, using
 from pygments.token import Punctuation, Literal, Text, Comment, Operator, Keyword, Name, String, Number
 from radura.tokens import IRI, QName, Wildcard
 
@@ -77,7 +77,7 @@ class CTMLexer(RegexLexer):
     tokens = {
             'root': [
                 (r'\s+', Text),
-                (r'(def)(\s+)', bygroups(Keyword, Text), 'template'),
+                (ur'(def)(\s+)(%s)' % _ident, bygroups(Keyword, Text, Name.Function)),
                 include('iris'),
                 (r'(end|isa|ako)\b', Keyword),
                 (r'(%%prefix)(\s+)(%s)(\s+)([^\s]+)' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, IRI)),
@@ -98,9 +98,6 @@ class CTMLexer(RegexLexer):
                 (r'#\(', Comment.Multiline, 'multiline-comments'),
                 (r'#[^\n]*', Comment.Single),
                 (r'[\[\]\(\),;\-\.=\^@:]+', Punctuation),
-            ],
-            'template': [
-                (_ident, Name.Function, '#pop'),
             ],
             'multiline-comments': [
                 (r'\)#', Comment.Multiline, '#pop'),
@@ -135,12 +132,13 @@ class TologLexer(RegexLexer):
                 (r'#[^\n]*', Comment.Single),
                 (r'/\*', Comment.Multiline, 'multiline-comments'),
                 include('builtins'),
-                (r'(?i)(select|insert|delete|update|from|merge|order|by|asc|desc)\b', Name.Keyword),
-                (r'(?i)(create|load|drop|into|where)\b', Name.Keyword), #t+
+                (r'(?i)(select|delete|update|from|merge|order|by|asc|desc)\b', Keyword),
+                (r'(?i)(create|load|drop|into|where)\b', Keyword), #t+
                 (r'(?i)(import)(\s+)("(?:[^"]|"{2})*")(\s+)(as)(\s+)(%s)' % _ident, bygroups(Keyword, Text, IRI, Text, Keyword, Text, Name.Namespace)),
                 (r'(?i)(using)(\s+)(%s)(\s+)(for)(\s+)([ias]"(?:[^"]|"{2})*")' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, Keyword, Text, IRI)),
                 (r'(%%prefix|%%import)(\s+)(%s)(\s+)([^\s]+)' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, IRI)),
-                (r'\b(%version|%base|%x-[^\s]+)\b', Keyword),
+                (r'(%version|%base|%x-[^\s]+)\b', Keyword),
+                (r'insert\b', Keyword, 'insert'),
                 (r'"([^"]|"{2})*"', String),
                 (ur'\$%s' % _ident, Name.Variable),
                 (ur'%%%s%%' % _ident, Name.Variable),
@@ -163,6 +161,9 @@ class TologLexer(RegexLexer):
                  r'scope|source-locator|subject-identifier|subject-locator|topic|'
                  r'topicmap|topic-name|type|value|value-like|variant)\b', Name.Builtin),
                 (r'\b(count|not)\b', Name.Builtin),
+            ],
+            'insert': [
+                (r'(?is)(.+?)(\b(?:into|from|where)\b)', bygroups(using(CTMLexer), Keyword), '#pop'),
             ],
             'multiline-comments': [
                 (r'/\*', Comment.Multiline, '#push'),
