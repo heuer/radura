@@ -135,7 +135,7 @@ class TologLexer(RegexLexer):
                 (r'#[^\n]*', Comment.Single),
                 (r'/\*', Comment.Multiline, 'multiline-comments'),
                 include('builtins'),
-                (r'(?i)(select|insert|delete|update|from|merge|count|order|by|asc|desc)\b', Name.Keyword),
+                (r'(?i)(select|insert|delete|update|from|merge|order|by|asc|desc)\b', Name.Keyword),
                 (r'(?i)(create|load|drop|into|where)\b', Name.Keyword), #t+
                 (r'(?i)(import)(\s+)("(?:[^"]|"{2})*")(\s+)(as)(\s+)(%s)' % _ident, bygroups(Keyword, Text, IRI, Text, Keyword, Text, Name.Namespace)),
                 (r'(?i)(using)(\s+)(%s)(\s+)(for)(\s+)([ias]"(?:[^"]|"{2})*")' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, Keyword, Text, IRI)),
