@@ -148,10 +148,11 @@ class TologLexer(RegexLexer):
                 (r'(\-|\+)?[0-9]+', Number.Integer),
                 (ur'(%s)(\s*)(\()(?=.+?:\-)' % _ident, bygroups(Name.Function, Text, Punctuation)),
                 (ur'(%s)(\s*)(\()(?!.+?:)' % _ident, bygroups(Name.Function, Text, Punctuation)),
+                (r'\[%s:[^<>\"\{\}\`\\\] ]+\]' % _ident, QName),
                 (_qname, QName),
                 (_ident, Name),
                 (r'<[^<>\"\{\}\`\\ ]+>', IRI),
-                (r'[\(\),{}\|\.\^:\-\[\]\?]+', Punctuation),
+                (r'[\(\),{}\|\.\^:\-\?]+', Punctuation),
                 (r'/?=|<=?|>=?', Operator),
             ],
             'builtins': [
