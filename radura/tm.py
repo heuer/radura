@@ -138,7 +138,7 @@ class TologLexer(RegexLexer):
                 (r'(?i)(using)(\s+)(%s)(\s+)(for)(\s+)([ias]"(?:[^"]|"{2})*")' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, Keyword, Text, IRI)),
                 (r'(%%prefix|%%import)(\s+)(%s)(\s+)([^\s]+)' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, IRI)),
                 (r'(%version|%base|%x-[^\s]+)\b', Keyword),
-                (r'insert\b', Keyword, 'insert'),
+                (r'(?i)insert\b', Keyword, 'insert'),
                 (r'"([^"]|"{2})*"', String),
                 (ur'\$%s' % _ident, Name.Variable),
                 (ur'%%%s%%' % _ident, Name.Variable),
