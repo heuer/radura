@@ -139,6 +139,7 @@ class TologLexer(RegexLexer):
                 (r'(%%prefix|%%import)(\s+)(%s)(\s+)([^\s]+)' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, IRI)),
                 (r'(%version|%base|%x-[^\s]+)\b', Keyword),
                 (r'(?i)insert\b', Keyword, 'insert'),
+                (r'(?i)\b(count|not)\b', Keyword),
                 (r'[ias]"(?:[^"]|"{2})*"', IRI),
                 (r'"([^"]|"{2})*"', String),
                 (r'@([0-9]+|[0-9]*%s)' % _ident, Name.Variable.Instance),
@@ -163,7 +164,6 @@ class TologLexer(RegexLexer):
                  r'object-id|occurrence|reifies|resource|role-player|'
                  r'scope|source-locator|subject-identifier|subject-locator|topic|'
                  r'topicmap|topic-name|type|value|value-like|variant)\b', Name.Builtin),
-                (r'(?i)\b(count|not)\b', Name.Builtin),
             ],
             'insert': [
                 (r'(?is)(.+?)(\b(?:into|from|where)\b)', bygroups(using(CTMLexer), Keyword), '#pop'),
