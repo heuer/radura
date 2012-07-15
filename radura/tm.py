@@ -163,7 +163,7 @@ class TologLexer(RegexLexer):
                  r'datatype|direct-instance-of|instance-of|item-identifier|'
                  r'object-id|occurrence|reifies|resource|role-player|'
                  r'scope|source-locator|subject-identifier|subject-locator|topic|'
-                 r'topicmap|topic-name|type|value|value-like|variant)\b', Name.Builtin),
+                 r'topicmap|topic-name|type|value|value-like|variant)(\s*)(\()', bygroups(Name.Builtin, Text, Punctuation)),
             ],
             'insert': [
                 (r'(?is)(.+?)(\b(?:into|from|where)\b)', bygroups(using(CTMLexer), Keyword), '#pop'),
