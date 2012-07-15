@@ -55,6 +55,7 @@ _ident = ur'(?:%s)+(?:\.*(?:%s))*' % (_ident_start, _ident_part)
 
 # QNames
 _qname = ur'%s:(?:(?:[0-9]+(?:%s)*)|%s)' % (_ident, _ident_part, _ident)
+_curie = ur'\[%s:[^<>\"\{\}\`\\\] ]+\]' % _ident
 
 _date = r'\-?(000[1-9]|00[1-9][0-9]|0[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9]+)\-(0[1-9]|1[0-2])\-(0[1-9]|1[0-9]|2[0-9]|3[0-1])'
 # Timezone
@@ -132,14 +133,13 @@ class TologLexer(RegexLexer):
                 (r'#[^\n]*', Comment.Single),
                 (r'/\*', Comment.Multiline, 'multiline-comments'),
                 include('builtins'),
-                (r'(?i)(select|delete|update|from|merge|order|by|asc|desc)\b', Keyword),
+                (r'(?i)(select|delete|update|from|merge|order|by|asc|desc|count|not)\b', Keyword),
                 (r'(?i)(create|load|drop|into|where)\b', Keyword), #t+
                 (r'(?i)(import)(\s+)("(?:[^"]|"{2})*")(\s+)(as)(\s+)(%s)' % _ident, bygroups(Keyword, Text, IRI, Text, Keyword, Text, Name.Namespace)),
                 (r'(?i)(using)(\s+)(%s)(\s+)(for)(\s+)([ias]"(?:[^"]|"{2})*")' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, Keyword, Text, IRI)),
                 (r'(%%prefix|%%import)(\s+)(%s)(\s+)([^\s]+)' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, IRI)),
                 (r'(%version|%base|%x-[^\s]+)\b', Keyword),
                 (r'(?i)insert\b', Keyword, 'insert'),
-                (r'(?i)\b(count|not)\b', Keyword),
                 (r'[ias]"(?:[^"]|"{2})*"', IRI),
                 (r'"([^"]|"{2})*"', String),
                 (r'@([0-9]+|[0-9]*%s)' % _ident, Name.Variable.Instance),
@@ -150,8 +150,8 @@ class TologLexer(RegexLexer):
                 (r'(\-|\+)?([0-9]+\.[0-9]+|\.([0-9])+)', Number.Float),
                 (r'(\-|\+)?[0-9]+', Number.Integer),
                 (ur'(%s)(\s*)(\()(?=.+?:\-)' % _ident, bygroups(Name.Function, Text, Punctuation)),
-                (ur'(%s)(\s*)(\()(?!.+?:)' % _ident, bygroups(Name.Function, Text, Punctuation)),
-                (r'\[%s:[^<>\"\{\}\`\\\] ]+\]' % _ident, QName),
+                (ur'((?:%s)|(?:%s)|(?:%s))(\s*)(\()(?!.+?:\s+)' % (_ident, _qname, _curie), bygroups(Name.Function, Text, Punctuation)),
+                (_curie, QName),
                 (_qname, QName),
                 (_ident, Name),
                 (r'<[^<>\"\{\}\`\\ ]+>', IRI),
