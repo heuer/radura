@@ -122,7 +122,14 @@ doap {
   # Treat the repository URL as subject locator.
   location: subject-locator
 }
-''')
+''',
+u'''
+%prefix doap <http://usefulinc.com/ns/doap#>
+doap {
+    123: name
+}
+'''
+)
     for d in data:
         tokens = [t[0] for t in lex(d)]
         yield no_error, tokens
