@@ -26,6 +26,15 @@ _WS = (Text, u' ')
 _COLON = (Punctuation, u':')
 
 
+def test_lang2scope_directive():
+    data = [(u'%langtoscope true', [(Keyword, u'%langtoscope'), _WS, (Keyword, u'true')]),
+            (u'%langtoscope false', [(Keyword, u'%langtoscope'), _WS, (Keyword, u'false')])]
+    for txt, tokens in data:
+        wanted = tokens[:]
+        wanted.append((Text, u'\n'))
+        yield eq_, wanted, lex(txt)
+
+
 def test_context_sensitive_keywords():
     data = [(u'ako: ako', [(Name, u'ako'), _COLON, _WS, (Keyword, u'ako')]),
             (u'lang true false', [(Name, u'lang'), _WS, (Name, u'true'), _WS, (Name, u'false')]),

@@ -178,7 +178,9 @@ class CRTMLexer(RegexLexer):
         'root': [
                 (ur'\s+', Text),
                 (ur'#[^\n]*', Comment.Single),
-                (ur'(%prefix|%include|%langtoscope)\b', Keyword),
+                (ur'(%%prefix)(\s+)(%s)(\s+)([^\s]+)' % _IDENT, bygroups(Keyword, Text, Name.Namespace, Text, IRI)),
+                (ur'(%langtoscope)(\s+)(true|false)', bygroups(Keyword, Text, Keyword)),
+                (ur'(%include)\b', Keyword),
                 (_IRI, IRI),
                 (_QNAME, QName),
                 (ur'%s|([0-9]+(\.*%s)*)' % (_IDENT, _IDENT_PART), Name),
