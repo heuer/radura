@@ -1,117 +1,103 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2012 -- Lars Heuer - Semagia <http://www.semagia.com/>.
+# Copyright (c) 2012 - 2014 -- Lars Heuer - Semagia <http://www.semagia.com/>.
 # All rights reserved.
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above
-#       copyright notice, this list of conditions and the following
-#       disclaimer in the documentation and/or other materials provided
-#       with the distribution.
-#
-#     * Neither the name of the project nor the names of the contributors 
-#       may be used to endorse or promote products derived from this 
-#       software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# BSD license.
 #
 """\
 Lexers for Topic Maps syntaxes.
+
+:author:       Lars Heuer (heuer[at]semagia.com)
+:organization: Semagia - http://www.semagia.com/
+:license:      BSD license
 """
+import sys
 import re
 from pygments.lexer import RegexLexer, include, bygroups, using
 from pygments.token import Punctuation, Literal, Text, Comment, Operator, Keyword, Name, String, Number
 from radura.tokens import IRI, QName, Wildcard
 
-__all__ = ['CTMLexer', 'TologLexer']
+__all__ = ['CTMLexer', 'TologLexer', 'CRTMLexer']
 
 # Start of an identifier
-_ident_start = ur'[a-zA-Z_]|[\u00C0-\u00D6]|[\u00D8-\u00F6]' + \
-                ur'|[\u00F8-\u02FF]|[\u0370-\u037D]' + \
-                ur'|[\u037F-\u1FFF]|[\u200C-\u200D]' + \
-                ur'|[\u2070-\u218F]|[\u2C00-\u2FEF]' + \
-                ur'|[\u3001-\uD7FF]|[\uF900-\uFDCF]|[\uFDF0-\uFFFD]'
+_IDENT_START = ur'[a-zA-Z_]' \
+               ur'|[\u00C0-\u00D6]|[\u00D8-\u00F6]' \
+               ur'|[\u00F8-\u02FF]|[\u0370-\u037D]' \
+               ur'|[\u037F-\u1FFF]|[\u200C-\u200D]' \
+               ur'|[\u2070-\u218F]|[\u2C00-\u2FEF]' \
+               ur'|[\u3001-\uD7FF]|[\uF900-\uFDCF]' \
+               ur'|[\uFDF0-\uFFFD]'
 
-_ident_part = ur'%s|[\-0-9]|[\u00B7]|[\u0300-\u036F]|[\u203F-\u2040]' % _ident_start
+if not sys.maxunicode == 0xffff:
+    # <http://bugs.python.org/issue12729>, <http://bugs.python.org/issue12749>,
+    # <http://bugs.python.org/issue3665>
+    _IDENT_START += ur'|[\U00010000-\U000EFFFF]'
+del sys
+
+_IDENT_PART = ur'%s|[\-0-9]|[\u00B7]|[\u0300-\u036F]|[\u203F-\u2040]' % _IDENT_START
 
 # Identifier
-_ident = ur'(?:%s)+(?:\.*(?:%s))*' % (_ident_start, _ident_part)
+_IDENT = ur'(%s)+(\.*(%s))*' % (_IDENT_START, _IDENT_PART)
 
 # QNames
-_qname = ur'%s:(?:(?:[0-9]+(?:%s)*)|%s)' % (_ident, _ident_part, _ident)
-_curie = ur'\[%s:[^<>\"\{\}\`\\\] ]+\]' % _ident
+_QNAME = ur'%s:(?:(?:[0-9]+(?:%s)*)|%s)' % (_IDENT, _IDENT_PART, _IDENT)
+_CURIE = ur'\[%s:[^<>\"\{\}\`\\\] ]+\]' % _IDENT
 
-_date = r'\-?(000[1-9]|00[1-9][0-9]|0[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9]+)\-(0[1-9]|1[0-2])\-(0[1-9]|1[0-9]|2[0-9]|3[0-1])'
-# Timezone
-_tz = r'Z|((\+|\-)[0-9]{2}:[0-9]{2})'
-# Time
-_time = r'[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?(%s)?' % _tz
+_DATE = ur'\-?(000[1-9]|00[1-9][0-9]|0[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9]+)\-(0[1-9]|1[0-2])\-(0[1-9]|1[0-9]|2[0-9]|3[0-1])'
+_TZ = ur'Z|((\+|\-)[0-9]{2}:[0-9]{2})'
+_TIME = r'[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?(%s)?' % _TZ
+
+_IRI = ur'<[^<>\"\{\}\`\\ ]+>'
 
 
 class CTMLexer(RegexLexer):
     """\
     `Compact Topic Maps Syntax (CTM) <http://www.isotopicmaps.org/ctm/>`_ lexer.
     """
-    name = 'CTM'
-    aliases = ['ctm']
-    filenames = ['*.ctm', '*.tmcl']
-    mimetypes = ['application/x-tm+ctm']
+    name = u'CTM'
+    aliases = [u'ctm']
+    filenames = [u'*.ctm', u'*.tmcl']
+    mimetypes = [u'application/x-tm+ctm']
     
     flags = re.UNICODE
 
     tokens = {
             'root': [
-                (r'\s+', Text),
-                (ur'(def)(\s+)(%s)' % _ident, bygroups(Keyword, Text, Name.Function)),
+                (ur'\s+', Text),
+                (ur'(def)(\s+)(%s)' % _IDENT, bygroups(Keyword, Text, Name.Function)),
                 include('iris'),
-                (r'(end|isa|ako)\b', Keyword),
-                (r'(%%prefix)(\s+)(%s)(\s+)([^\s]+)' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, IRI)),
-                (r'(%encoding|%version|%include|%mergemap)\b', Keyword),
-                (r'\*', Keyword.Constant),
-                (r'"{3}([^"\\]|(\\[\\"rntuU])|"|"")*"{3}', String),
-                (r'"([^"\\]|(\\[\\"rntuU]))*"', String),
-                (ur'\?%s' % _ident, Wildcard),
-                (r'\?', Wildcard),
-                (ur'\$%s' % _ident, Name.Variable),
-                (r'%sT%s' % (_date, _time), Literal.Date),
-                (_date, Literal.Date),
-                (r'(\-|\+)?([0-9]+\.[0-9]+|\.([0-9])+)', Number.Float),
-                (r'(\-|\+)?[0-9]+', Number.Integer),
-                (ur'(%s)(\s*)(\()(?!.+?:)' % _ident, bygroups(Name.Function, Text, Punctuation)), 
-                (_qname, QName),
-                (_ident, Name),
-                (r'#\(', Comment.Multiline, 'multiline-comments'),
-                (r'#[^\n]*', Comment.Single),
-                (r'[\[\]\(\),;\-\.=\^@:]+', Punctuation),
+                (ur'(end|isa|ako)\b', Keyword),
+                (ur'(%%prefix)(\s+)(%s)(\s+)([^\s]+)' % _IDENT, bygroups(Keyword, Text, Name.Namespace, Text, IRI)),
+                (ur'(%encoding|%version|%include|%mergemap)\b', Keyword),
+                (ur'\*', Keyword.Constant),
+                (ur'"{3}([^"\\]|(\\[\\"rntuU])|"|"")*"{3}', String),
+                (ur'"([^"\\]|(\\[\\"rntuU]))*"', String),
+                (ur'\?%s' % _IDENT, Wildcard),
+                (ur'\?', Wildcard),
+                (ur'\$%s' % _IDENT, Name.Variable),
+                (ur'%sT%s' % (_DATE, _TIME), Literal.Date),
+                (_DATE, Literal.Date),
+                (ur'(\-|\+)?([0-9]+\.[0-9]+|\.([0-9])+)', Number.Float),
+                (ur'(\-|\+)?[0-9]+', Number.Integer),
+                (ur'(%s)(\s*)(\()(?!.+?:)' % _IDENT, bygroups(Name.Function, Text, Punctuation)),
+                (_QNAME, QName),
+                (_IDENT, Name),
+                (ur'#\(', Comment.Multiline, 'multiline-comments'),
+                (ur'#[^\n]*', Comment.Single),
+                (ur'[\[\]\(\),;\-\.=\^@:]+', Punctuation),
             ],
             'multiline-comments': [
-                (r'\)#', Comment.Multiline, '#pop'),
-                (r'#\(', Comment.Multiline, '#push'),
-                (r'[^#\(\)]+', Comment.Multiline),
-                (r'#|\(|\)', Comment.Multiline),
+                (ur'\)#', Comment.Multiline, '#pop'),
+                (ur'#\(', Comment.Multiline, '#push'),
+                (ur'[^#\(\)]+', Comment.Multiline),
+                (ur'#|\(|\)', Comment.Multiline),
             ],
             'iris': [
-                (r'<[^<>\"\{\}\`\\ ]+>', IRI),
-                (r'[a-zA-Z]+[a-zA-Z0-9\+\-\.]*://([;\.\)]*[^\s;\]\.\(\)]+)+', IRI),
+                (_IRI, IRI),
+                (ur'[a-zA-Z]+[a-zA-Z0-9\+\-\.]*://([;\.\)]*[^\s;\]\.\(\)]+)+', IRI),
             ],
         }
-
 
 
 class TologLexer(RegexLexer):
@@ -120,58 +106,97 @@ class TologLexer(RegexLexer):
     
     Supports tolog+ as well.
     """
-    name = 'tolog'
-    aliases = ['Tolog']
-    filenames = ['*.tl', '*.tolog']
-    mimetypes = ['application/x-tolog']
+    name = u'tolog'
+    aliases = [u'Tolog']
+    filenames = [u'*.tl', u'*.tolog']
+    mimetypes = [u'application/x-tolog']
 
     flags = re.UNICODE
 
     tokens = {
             'root': [
-                (r'\s+', Text),
-                (r'#[^\n]*', Comment.Single),
-                (r'/\*', Comment.Multiline, 'multiline-comments'),
+                (ur'\s+', Text),
+                (ur'#[^\n]*', Comment.Single),
+                (ur'/\*', Comment.Multiline, 'multiline-comments'),
                 include('builtins'),
-                (r'(?i)(select|delete|update|from|merge|order|by|asc|desc|count|not)\b', Keyword),
-                (r'(?i)(create|load|drop|into|where)\b', Keyword), #t+
-                (r'(?i)(import)(\s+)("(?:[^"]|"{2})*")(\s+)(as)(\s+)(%s)' % _ident, bygroups(Keyword, Text, IRI, Text, Keyword, Text, Name.Namespace)),
-                (r'(?i)(using)(\s+)(%s)(\s+)(for)(\s+)([ias]"(?:[^"]|"{2})*")' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, Keyword, Text, IRI)),
-                (r'(%%prefix|%%import)(\s+)(%s)(\s+)([^\s]+)' % _ident, bygroups(Keyword, Text, Name.Namespace, Text, IRI)),
-                (r'(%version|%base|%x-[^\s]+)\b', Keyword),
-                (r'(?i)insert\b', Keyword, 'insert'),
-                (r'[ias]"(?:[^"]|"{2})*"', IRI),
-                (r'"([^"]|"{2})*"', String),
-                (r'@([0-9]+|[0-9]*%s)' % _ident, Name.Variable.Instance),
-                (ur'\$%s' % _ident, Name.Variable),
-                (ur'%%%s%%' % _ident, Name.Variable),
-                (r'%sT%s' % (_date, _time), Literal.Date),
-                (_date, Literal.Date),
-                (r'(\-|\+)?([0-9]+\.[0-9]+|\.([0-9])+)', Number.Float),
-                (r'(\-|\+)?[0-9]+', Number.Integer),
-                (ur'(%s)(\s*)(\()(?=.+?:\-)' % _ident, bygroups(Name.Function, Text, Punctuation)),
-                (ur'((?:%s)|(?:%s)|(?:%s))(\s*)(\()(?!.+?:\s+)' % (_ident, _qname, _curie), bygroups(Name.Function, Text, Punctuation)),
-                (_curie, QName),
-                (_qname, QName),
-                (_ident, Name),
-                (r'<[^<>\"\{\}\`\\ ]+>', IRI),
-                (r'[\(\),{}\|\.\^:\-\?]+', Punctuation),
-                (r'/?=|<=?|>=?', Operator),
+                (ur'(?i)(select|delete|update|from|merge|order|by|asc|desc|count|not)\b', Keyword),
+                (ur'(?i)(create|load|drop|into|where)\b', Keyword),  # t+
+                (ur'(?i)(import)(\s+)("(?:[^"]|"{2})*")(\s+)(as)(\s+)(%s)' % _IDENT, bygroups(Keyword, Text, IRI, Text, Keyword, Text, Name.Namespace)),
+                (ur'(?i)(using)(\s+)(%s)(\s+)(for)(\s+)([ias]"(?:[^"]|"{2})*")' % _IDENT, bygroups(Keyword, Text, Name.Namespace, Text, Keyword, Text, IRI)),
+                (ur'(%%prefix|%%import)(\s+)(%s)(\s+)([^\s]+)' % _IDENT, bygroups(Keyword, Text, Name.Namespace, Text, IRI)),
+                (ur'(%version|%base|%x-[^\s]+)\b', Keyword),
+                (ur'(?i)insert\b', Keyword, 'insert'),
+                (ur'[ias]"(?:[^"]|"{2})*"', IRI),
+                (ur'"([^"]|"{2})*"', String),
+                (ur'@([0-9]+|[0-9]*%s)' % _IDENT, Name.Variable.Instance),
+                (ur'\$%s' % _IDENT, Name.Variable),
+                (ur'%%%s%%' % _IDENT, Name.Variable),
+                (ur'%sT%s' % (_DATE, _TIME), Literal.Date),
+                (_DATE, Literal.Date),
+                (ur'(\-|\+)?([0-9]+\.[0-9]+|\.([0-9])+)', Number.Float),
+                (ur'(\-|\+)?[0-9]+', Number.Integer),
+                (ur'(%s)(\s*)(\()(?=.+?:\-)' % _IDENT, bygroups(Name.Function, Text, Punctuation)),
+                (ur'((?:%s)|(?:%s)|(?:%s))(\s*)(\()(?!.+?:\s+)' % (_IDENT, _QNAME, _CURIE), bygroups(Name.Function, Text, Punctuation)),
+                (_CURIE, QName),
+                (_QNAME, QName),
+                (_IDENT, Name),
+                (_IRI, IRI),
+                (ur'[\(\),{}\|\.\^:\-\?]+', Punctuation),
+                (ur'/?=|<=?|>=?', Operator),
             ],
             'builtins': [
-                (r'\b(association|association-role|base-locator|'
-                 r'datatype|direct-instance-of|instance-of|item-identifier|'
-                 r'object-id|occurrence|reifies|resource|role-player|'
-                 r'scope|source-locator|subject-identifier|subject-locator|topic|'
-                 r'topicmap|topic-name|type|value|value-like|variant)(\s*)(\()', bygroups(Name.Builtin, Text, Punctuation)),
+                (ur'\b(association|association-role|base-locator'
+                 ur'|datatype|direct-instance-of|instance-of|item-identifier'
+                 ur'|object-id|occurrence|reifies|resource|role-player'
+                 ur'|scope|source-locator|subject-identifier|subject-locator'
+                 ur'|topic|topicmap|topic-name|type|value|value-like|variant)(\s*)(\()', bygroups(Name.Builtin, Text, Punctuation)),
             ],
             'insert': [
-                (r'(?is)(.+?)(\b(?:into|from|where)\b)', bygroups(using(CTMLexer), Keyword), '#pop'),
+                (ur'(?is)(.+?)(\b(?:into|from|where)\b)', bygroups(using(CTMLexer), Keyword), '#pop'),
             ],
             'multiline-comments': [
-                (r'/\*', Comment.Multiline, '#push'),
-                (r'\*/', Comment.Multiline, '#pop'),
-                (r'[^/\*]+', Comment.Multiline),
-                (r'[/*]', Comment.Multiline)
+                (ur'/\*', Comment.Multiline, '#push'),
+                (ur'\*/', Comment.Multiline, '#pop'),
+                (ur'[^/\*]+', Comment.Multiline),
+                (ur'[/*]', Comment.Multiline)
             ],
         }
+
+
+class CRTMLexer(RegexLexer):
+    """\
+    `Compact RDF to Topic Maps (CRTM) <http://www.semagia.com/tr/crtm/>`_ lexer.
+    """
+    name = u'CRTM'
+    aliases = [u'crtm']
+    filenames = [u'*.crtm']
+    mimetypes = [u'application/x-tm+crtm']
+
+    flags = re.UNICODE
+
+    tokens = {
+        'root': [
+                (ur'\s+', Text),
+                (ur'#[^\n]*', Comment.Single),
+                (ur'(%prefix|%include|%langtoscope)\b', Keyword),
+                (_IRI, IRI),
+                (_QNAME, QName),
+                (ur'%s|([0-9]+(\.*%s)*)' % (_IDENT, _IDENT_PART), Name),
+                (ur'[:;]', Punctuation, 'rhs'),
+                (ur'[=\(\),{}@]+', Punctuation),
+        ],
+        'rhs': [
+                (ur'\s+', Text),
+                (ur'lang', Keyword),
+                (ur'(association|assoc|occurrence|occ|name|-|isa|ako'
+                 ur'|item-identifier|iid'
+                 ur'|subject-identifier|sid'
+                 ur'|subject-locator|slo'
+                 ur'|true|false)', Keyword, '#pop'),
+                (_IRI, IRI, '#pop'),
+                (_QNAME, QName, '#pop'),
+                (ur'%s|([0-9]+(\.*%s)*)' % (_IDENT, _IDENT_PART), Name, '#pop'),
+                (ur'[=]', Punctuation),
+                (ur'[\(\)@]', Punctuation, '#pop'),
+        ],
+    }

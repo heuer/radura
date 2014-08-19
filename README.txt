@@ -7,6 +7,5 @@ Radura
 Lexers:
  * CTM
  * tolog
- * tolog+
- 
- 
+ * t+
+ * CRTM
